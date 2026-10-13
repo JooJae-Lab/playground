@@ -1,0 +1,31 @@
+# 연습용 CI: FAIL_CI 파일이 있으면 실패
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - run: test ! -f FAIL_CI
+
+  verify:
+    needs: [check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 검사 결과 판정
+        env:
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          if [[ "$FAILED" == "true" ]]; then
+            echo "::error::실패한 검사가 있음"
+            exit 1
+          fi
